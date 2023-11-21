@@ -1,0 +1,10 @@
+{
+  "domain": "fuel",
+  "name": "fuel",
+  "codeowners": ["@syrb"],
+  "config_flow": true,
+  "documentation": "Not Available",
+  "integration_type": "hub",
+  "loggers": ["fuel"],
+  "version": "0.0.1"
+}
