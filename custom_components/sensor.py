@@ -3,14 +3,17 @@ import requests
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers import device_registry as dr
 from datetime import datetime
-import datetime as dt  # Add this line
+import datetime as dt
 
 _LOGGER = logging.getLogger(__name__)
 DOMAIN = "sainsburys_fuel"
-ALLOWED_POSTCODES = ['PO', 'ST', 'CO', 'DE']
+ALLOWED_POSTCODES = ['PO', 'ST', 'CO', 'DE'] # CHANGE ME
+
+# list of API's, add and delete as required.
 api = [
     'https://api.sainsburys.co.uk/v1/exports/latest/fuel_prices_data.json',
     'https://storelocator.asda.com/fuel_prices_data.json',
+    'https://www.tesco.com/fuel_prices/fuel_prices_data.json',
     ]
 
 def lowest_price(data, structure):
@@ -22,8 +25,6 @@ def lowest_price(data, structure):
                 lowest_value = data[fuel_type]
                 structure[fuel_type]['price'] = lowest_value
                 structure[fuel_type]['site_id'] = data['site_id']
-
-    # You might want to return or use the updated structure here
     return structure
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
@@ -37,7 +38,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 
             for station in data.get('stations', []):
                 site_id = station.get('site_id', '')
-                brand = station.get('brand', '').replace("'", "")
+                brand = station.get('brand', '').replace("'", "") # Removes the ' from Sainsbury's other it breaks things
                 postcode = station.get('postcode', '').split()[0][:2]
                 if postcode in ALLOWED_POSTCODES:
                     entity_id = f"{brand.lower()}_fuel_{site_id.lower()}_{postcode.lower()}"
@@ -52,11 +53,12 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
                         'latitude': station.get('location', {}).get('latitude', 0),
                         'longitude': station.get('location', {}).get('longitude', 0),
                     }
-                    entities.append(SainsburysFuelSensor(hass, entity_id, sensor_data))
+                    entities.append(FuelSensor(hass, entity_id, sensor_data))
                     hass.states.set(f"sensor.{entity_id}", "OK", sensor_data)
                     
                     _LOGGER.info("Sensor created: %s", entity_id)
 
+                    # Checks if the current station has the lowest price
                     structure = lowest_price(sensor_data, structure)
 
             for fuel_type in structure:
@@ -73,14 +75,14 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
                             'longitude': station.get('location', {}).get('longitude', 0),
                         }
                         hass.states.set(f"sensor.{brand}_lowest_{fuel_type}", "OK", lowest_price_sensor_data)
-                        lowest_price_sensor = SainsburysFuelSensor(hass, f"{brand}_lowest_{fuel_type}", lowest_price_sensor_data)
+                        lowest_price_sensor = FuelSensor(hass, f"{brand}_lowest_{fuel_type}", lowest_price_sensor_data)
                         entities.append(lowest_price_sensor)
                         _LOGGER.info(f"Sensor created: {brand}_lowest_{fuel_type}")
 
     except Exception as e:
         _LOGGER.error("Error fetching data from API: %s", e)
 
-class SainsburysFuelSensor(Entity):
+class FuelSensor(Entity):
     def __init__(self, hass, entity_id, sensor_data):
         self._hass = hass
         self._entity_id = entity_id
@@ -159,9 +161,9 @@ class SainsburysFuelSensor(Entity):
                                 'longitude': station.get('location', {}).get('longitude', 0),
                             }
                             hass.states.set(f"sensor.{brand}_lowest_{fuel_type}", "OK", lowest_price_sensor_data)
-                            lowest_price_sensor = SainsburysFuelSensor(hass, f"{brand}_lowest_{fuel_type}", lowest_price_sensor_data)
+                            lowest_price_sensor = FuelSensor(hass, f"{brand}_lowest_{fuel_type}", lowest_price_sensor_data)
                             entities.append(lowest_price_sensor)
                             _LOGGER.info(f"Sensor created: {brand}_lowest_{fuel_type}")
 
         except Exception as e:
-            _LOGGER.error("Error updating data for Sainsbury's API: %s", e)
+            _LOGGER.error("Error updating data for API: %s", e)
