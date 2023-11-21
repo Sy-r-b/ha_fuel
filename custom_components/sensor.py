@@ -7,7 +7,7 @@ import datetime as dt  # Add this line
 
 _LOGGER = logging.getLogger(__name__)
 DOMAIN = "sainsburys_fuel"
-ALLOWED_POSTCODES = ['DA', 'CT', 'TN', 'ME']
+ALLOWED_POSTCODES = ['PO', 'ST', 'CO', 'DE']
 api = [
     'https://api.sainsburys.co.uk/v1/exports/latest/fuel_prices_data.json',
     'https://storelocator.asda.com/fuel_prices_data.json',
