@@ -8,7 +8,7 @@ import datetime as dt
 
 _LOGGER = logging.getLogger(__name__)
 DOMAIN = "sainsburys_fuel"
-ALLOWED_POSTCODES = ['DA', 'CT', 'TN', 'ME'] # CHANGE ME, only input the first 2 digits of required post codes.
+ALLOWED_POSTCODES = ['CH', 'AN', 'GE', 'ME'] # CHANGE ME, only input the first 2 digits of required post codes.
 
 # list of API's, add and delete as required.
 # asconagroup commented out due to format causing errors.
