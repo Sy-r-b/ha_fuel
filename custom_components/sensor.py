@@ -8,11 +8,10 @@ import datetime as dt
 
 _LOGGER = logging.getLogger(__name__)
 DOMAIN = "sainsburys_fuel"
-ALLOWED_POSTCODES = ['CH', 'AN', 'GE', 'ME'] # CHANGE ME
+ALLOWED_POSTCODES = ['DA', 'CT', 'TN', 'ME'] # CHANGE ME, only input the first 2 digits of required post codes.
 
 # list of API's, add and delete as required.
-# So far Shell / ASDA don't do E5 fuel.
-# Tesco commented out due to crashing the script.
+# asconagroup commented out due to format causing errors.
 api = [
     'https://api.sainsburys.co.uk/v1/exports/latest/fuel_prices_data.json',
     'https://storelocator.asda.com/fuel_prices_data.json',
@@ -25,17 +24,26 @@ api = [
     'https://www.rontec-servicestations.co.uk/fuel-prices/data/fuel_prices_data.json',
     'https://www.sgnretail.uk/files/data/SGN_daily_fuel_prices.json',
     #'https://fuelprices.asconagroup.co.uk/newfuel.json',
-    #'https://www.tesco.com/fuel_prices/fuel_prices_data.json',
+    'https://www.tesco.com/fuel_prices/fuel_prices_data.json',
     ]
 
 api_data = {}
 
-def api_update():
+def api_update(now=None):
+    # pulls data from each API and inputs into the api_data variable to prevent many API hits on sensor updates.
     global api_data
     for api_url in api:
         _LOGGER.info("Starting API data update: %s", api_url)
         try:
-            response = requests.get(api_url)
+            if 'tesco' in api_url:
+                headers = {
+                    'Upgrade-Insecure-Requests': '1',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/119.0'
+                }
+                response = requests.get(api_url, headers=headers, timeout=15)
+            
+            else:
+                response = requests.get(api_url, timeout=15)
             data = response.json()
             # Add data to the dictionary with the URL as the key
             api_data[api_url] = data
@@ -43,6 +51,7 @@ def api_update():
             _LOGGER.error("Error updating data from API: %s", e)
 
 def output_attributes(station):
+    # checks if station input is in the allowed postcodes, then output the necessary attribute data.
     postcode = station.get('postcode', '').split()[0][:2]
     if postcode in ALLOWED_POSTCODES:
         brand = station.get('brand', '').replace("'", "")
@@ -146,7 +155,7 @@ class FuelSensor(Entity):
     @property
     def device_state_attributes(self):
         return {
-            'brand': brand,
+            'brand': self._attributes['brand'],
             'site_id': self._attributes['site_id'],
             'address': self._attributes['address'],
             'E10': self._attributes['E10'],
